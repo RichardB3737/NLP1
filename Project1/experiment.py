@@ -14,6 +14,7 @@ import random
 from . import loglin
 from . import smlp
 from . import clslib
+from . import smlp2
 
 
 
@@ -137,7 +138,6 @@ def cross_validation_experiment(data_splits, outcome_space, encoder: 'Encoder', 
 
         fold_folder = Path(f"{save_to}/fold-{fold}")
         fold_folder.mkdir(parents=True, exist_ok=True) 
-        
         if model_option == 'logistic':                        
             llmodel = loglin.fit(training_set, encoder, save_to=f'{fold_folder}/model', **loglin_args) 
             models[fold] = f'{fold_folder}/model'
@@ -150,7 +150,14 @@ def cross_validation_experiment(data_splits, outcome_space, encoder: 'Encoder', 
                 training_set, validation_set, len(outcome_space), encoder, save_to=f'{fold_folder}/model', **smlp_args
             )
             models[fold] = f'{fold_folder}/model'
-            accuracies[fold] = metrics[best_epoch]['val_metrics']['accuracy']            
+            accuracies[fold] = metrics[best_epoch]['val_metrics']['accuracy']
+        
+        elif model_option == 'mlp2':
+            metrics, best_epoch, predictions[fold] = smlp2.train_neural_network_model2(
+                training_set, validation_set, len(outcome_space), encoder, save_to=f'{fold_folder}/model', **smlp_args
+            )
+            models[fold] = f'{fold_folder}/model'
+            accuracies[fold] = metrics[best_epoch]['val_metrics']['accuracy']          
         else:
             raise ValueError(f"Unkonwn model_option={model_option}")
 
