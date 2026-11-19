@@ -99,6 +99,10 @@ def evaluate(model, dataloader, criterion, device="cpu"):
         "accuracy": total_correct / total_examples,
     }
 
+def trainable_state_dict(model):
+    trainable = {n for n, p in model.named_parameters() if p.requires_grad}
+    return {k: v for k, v in model.state_dict().items() if k in trainable}
+
 def train(
     training_set, 
     validation_set, 
@@ -203,11 +207,11 @@ def train(
         if epoch != 0:
             if val_metrics["loss"] <= best_val_loss:
                 best_val_loss = val_metrics["loss"]
-                torch.save(model.state_dict(), f"{save_to}.pt")
+                torch.save(trainable_state_dict(model), f"{save_to}.pt")
                 best_epoch = epoch
         else:
             best_val_loss = val_metrics["loss"]
-            torch.save(model.state_dict(), f"{save_to}.pt")
+            torch.save(trainable_state_dict(model), f"{save_to}.pt")
             best_epoch = epoch
     
     time_training = time.time()
@@ -248,7 +252,10 @@ def load(path, emb_model: clslib.PretrainedEmbeddings, device="cpu"):
         **args['regressor_kwargs']
     )
     
-    model.load_state_dict(state_dict)
+    # model.load_state_dict(state_dict)
+    missing, unexpected = model.load_state_dict(state_dict, strict=False)
+    assert not unexpected, unexpected
+    assert all("embedding" in k for k in missing), missing    
     model = model.to(device)
     return model
 
